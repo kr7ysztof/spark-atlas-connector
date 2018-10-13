@@ -18,12 +18,12 @@
 package com.hortonworks.spark.atlas
 
 import scala.util.control.NonFatal
-
 import com.sun.jersey.core.util.MultivaluedMapImpl
-import org.apache.atlas.model.instance.AtlasEntity
+import org.apache.atlas.model.instance.{AtlasEntity, AtlasEntityHeader}
 import org.apache.atlas.model.typedef.AtlasTypesDef
-
 import com.hortonworks.spark.atlas.utils.Logging
+
+import scala.collection.mutable
 
 trait AtlasClient extends Logging {
   var conf: AtlasClientConf = new AtlasClientConf
@@ -34,20 +34,21 @@ trait AtlasClient extends Logging {
 
   def updateAtlasTypeDefs(typeDefs: AtlasTypesDef): Unit
 
-  final def createEntities(entities: Seq[AtlasEntity]): Unit = {
+  final def createEntities(entities: Seq[AtlasEntity]): mutable.Map[String, String] = {
     if (entities.isEmpty) {
-      return
-    }
-
-    try {
-      doCreateEntities(entities)
-    } catch {
-      case NonFatal(e) =>
-        logWarn(s"Failed to create entities", e)
+      mutable.Map[String, String]()
+    } else {
+      try {
+        doCreateEntities(entities)
+      } catch {
+        case NonFatal(e) =>
+          logWarn(s"Failed to create entities", e)
+          mutable.Map[String, String]()
+      }
     }
   }
 
-  protected def doCreateEntities(entities: Seq[AtlasEntity]): Unit
+  protected def doCreateEntities(entities: Seq[AtlasEntity]): mutable.Map[String, String]
 
   final def deleteEntityWithUniqueAttr(entityType: String, attribute: String): Unit = {
     try {

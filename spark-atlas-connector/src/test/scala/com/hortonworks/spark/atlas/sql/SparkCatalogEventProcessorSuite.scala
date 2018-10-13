@@ -23,9 +23,8 @@ import java.nio.file.Files
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
 import com.sun.jersey.core.util.MultivaluedMapImpl
-import org.apache.atlas.model.instance.AtlasEntity
+import org.apache.atlas.model.instance.{AtlasEntity, AtlasEntityHeader}
 import org.apache.atlas.model.typedef.AtlasTypesDef
 import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.SparkSession
@@ -33,7 +32,6 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-
 import com.hortonworks.spark.atlas.{AtlasClient, AtlasClientConf, TestUtils}
 import com.hortonworks.spark.atlas.utils.SparkUtils
 
@@ -145,12 +143,14 @@ class FirehoseAtlasClient(conf: AtlasClientConf) extends AtlasClient {
     new AtlasTypesDef()
   }
 
-  override protected def doCreateEntities(entities: Seq[AtlasEntity]): Unit = {
+  override protected def doCreateEntities(entities: Seq[AtlasEntity])
+  : mutable.Map[String, String] = {
     entities.foreach { e =>
       createEntityCall(e.getTypeName) =
         createEntityCall.getOrElseUpdate(e.getTypeName, 0) + 1
       processedEntity = e
     }
+    mutable.Map[String, String]()
   }
 
   override protected def doUpdateEntityWithUniqueAttr(

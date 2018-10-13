@@ -23,10 +23,12 @@ import scala.collection.JavaConverters._
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import org.apache.atlas.AtlasClientV2
 import org.apache.atlas.model.SearchFilter
-import org.apache.atlas.model.instance.AtlasEntity
+import org.apache.atlas.model.instance.{AtlasEntity, AtlasEntityHeader}
 import org.apache.atlas.model.instance.AtlasEntity.{AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo}
 import org.apache.atlas.model.typedef.AtlasTypesDef
 import org.apache.atlas.utils.AuthenticationUtil
+
+import scala.collection.mutable
 
 class RestAtlasClient(atlasClientConf: AtlasClientConf) extends AtlasClient {
 
@@ -62,16 +64,18 @@ class RestAtlasClient(atlasClientConf: AtlasClientConf) extends AtlasClient {
     client.updateAtlasTypeDefs(typeDefs)
   }
 
-  override protected def doCreateEntities(entities: Seq[AtlasEntity]): Unit = {
+  override protected def doCreateEntities(entities: Seq[AtlasEntity])
+  : mutable.Map[String, String] = {
     val entitesWithExtInfo = new AtlasEntitiesWithExtInfo()
     entities.foreach(entitesWithExtInfo.addEntity)
     val response = client.createEntities(entitesWithExtInfo)
     try {
-      logInfo(s"Entities ${response.getCreatedEntities.asScala.map(_.getGuid).mkString(", ")} " +
-        s"created")
+      logWarn(s"Entities ${response.getGuidAssignments.asScala.mkString(", ")} " +
+        s"created/updated")
     } catch {
-      case _: Throwable => throw new IllegalStateException(s"Fail to get create entities")
+      case e: Throwable => throw new IllegalStateException(s"Failed to create entities", e)
     }
+    response.getGuidAssignments.asScala
   }
 
   override protected def doDeleteEntityWithUniqueAttr(

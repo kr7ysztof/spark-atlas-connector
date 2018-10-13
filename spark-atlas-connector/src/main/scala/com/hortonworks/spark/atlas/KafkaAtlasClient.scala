@@ -23,12 +23,14 @@ import scala.collection.JavaConverters._
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import org.apache.atlas.hook.AtlasHook
 import org.apache.atlas.model.typedef.AtlasTypesDef
-import org.apache.atlas.model.instance.AtlasEntity
+import org.apache.atlas.model.instance.{AtlasEntity, AtlasEntityHeader}
 import org.apache.atlas.v1.model.notification.HookNotificationV1
 import org.apache.atlas.v1.model.notification.HookNotificationV1.{EntityCreateRequest, EntityDeleteRequest}
 import org.apache.atlas.v1.model.instance.Referenceable
 import org.apache.atlas.model.notification.HookNotification
 import com.hortonworks.spark.atlas.utils.SparkUtils
+
+import scala.collection.mutable
 
 class KafkaAtlasClient(atlasClientConf: AtlasClientConf) extends AtlasHook with AtlasClient {
 
@@ -48,13 +50,15 @@ class KafkaAtlasClient(atlasClientConf: AtlasClientConf) extends AtlasHook with 
     throw new UnsupportedOperationException("Kafka atlas client doesn't support update type defs")
   }
 
-  override protected def doCreateEntities(entities: Seq[AtlasEntity]): Unit = {
+  override protected def doCreateEntities(entities: Seq[AtlasEntity])
+  : mutable.Map[String, String] = {
     val createRequests = entities.map { e =>
       new EntityCreateRequest(
         SparkUtils.currUser(), entityToReferenceable(e)): HookNotification
     }.toList.asJava
 
     notifyEntities(createRequests, SparkUtils.ugi())
+    mutable.Map[String, String] ()
   }
 
   override protected def doDeleteEntityWithUniqueAttr(

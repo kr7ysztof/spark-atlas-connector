@@ -32,9 +32,9 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.types.StructType
-import com.hortonworks.spark.atlas.utils.SparkUtils
+import com.hortonworks.spark.atlas.utils.{Logging, SparkUtils}
 
-object external {
+object external extends Logging {
   // External metadata types used to link with external entities
 
   def objectId(entity: AtlasEntity): AtlasObjectId = {
@@ -52,6 +52,9 @@ object external {
     val fsPath = new Path(uri)
     def clusterName: String = atlasClient.conf.get(AtlasClientConf.CLUSTER_NAME)
 
+    val scheme = uri.getScheme
+
+    logWarn(s"Scheme: $scheme")
     val entity = if (uri.getScheme == "hdfs") {
       val entity = new AtlasEntity(HDFS_PATH_TYPE_STRING)
       entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
@@ -62,6 +65,7 @@ object external {
       entity.setAttribute("qualifiedName", uri.toString)
       entity
     } else if (uri.getScheme == metadata.S3_SCHEME || uri.getScheme == metadata.S3A_SCHEME) {
+      logWarn("Detected S3")
       val conf = atlasClient
       val strPath = fsPath.toString.toLowerCase
       val bucketName = fsPath.toUri.getAuthority
@@ -74,11 +78,16 @@ object external {
       val bucketEntity = new AtlasEntity(metadata.AWS_S3_BUCKET)
       bucketEntity.setAttribute("qualifiedName", bucketQualifiedName)
       bucketEntity.setAttribute("name", bucketName)
-      atlasClient.createEntities(Seq(bucketEntity))
+
+      // slight hack :-)
+      val headers = atlasClient.createEntities(Seq(bucketEntity))
+      val guid = headers.getOrElse(bucketEntity.getGuid, bucketEntity.getGuid)
+      bucketEntity.setGuid(guid)
 
       val entity = new AtlasEntity(metadata.AWS_S3_PSEUDO_DIR)
-      entity.setAttribute("qualifiedNamed", pathQualifiedName)
       entity.setAttribute(metadata.ATTRIBUTE_BUCKET, objectId(bucketEntity))
+      entity.setAttribute("qualifiedName", pathQualifiedName)
+
       entity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX,
         Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
       entity.setAttribute("name",
@@ -94,11 +103,6 @@ object external {
         Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
       entity.setAttribute("qualifiedName", uri.toString)
       entity
-    }
-
-
-    if (uri.getScheme == "hdfs") {
-      entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
     }
 
     entity

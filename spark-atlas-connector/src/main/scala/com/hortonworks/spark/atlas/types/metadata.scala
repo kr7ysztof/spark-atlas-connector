@@ -42,7 +42,7 @@ object metadata {
 
   val ATTRIBUTE_BUCKET = "bucket"
   val ATTRIBUTE_OBJECT_PREFIX = "objectPrefix"
-  
+
   import external._
 
   // ========= DB type =========

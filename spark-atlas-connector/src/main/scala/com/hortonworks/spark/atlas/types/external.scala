@@ -43,17 +43,52 @@ object external {
 
   def pathToEntity(path: String)(implicit atlasClient: AtlasClient): AtlasEntity = {
     val uri = resolveURI(path)
+    val fsPath = new Path(uri)
+
     val entity = if (uri.getScheme == "hdfs") {
-      new AtlasEntity(HDFS_PATH_TYPE_STRING)
-    } else {
-      new AtlasEntity(FS_PATH_TYPE_STRING)
+      val entity = new AtlasEntity(HDFS_PATH_TYPE_STRING)
+      entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
+      entity.setAttribute("name",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("path",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("qualifiedName", uri.toString)
+      entity
+    } else if (uri.getScheme == metadata.S3_SCHEME || uri.getScheme == metadata.S3A_SCHEME) {
+      val strPath = fsPath.toString.toLowerCase
+      val bucketName = fsPath.toUri.getAuthority
+      val bucketQualifiedName = (fsPath.toUri.getScheme
+        + metadata.SCHEME_SEPARATOR
+        + fsPath.toUri.getAuthority)
+      val pathQualifiedName = strPath.toLowerCase + clusterName
+
+      // Yes this is a side effect
+      val bucketEntity = new AtlasEntity(metadata.AWS_S3_BUCKET)
+      bucketEntity.setAttribute("qualifiedName", bucketQualifiedName)
+      bucketEntity.setAttribute("name", bucketName)
+      atlasClient.createEntities(Seq(bucketEntity))
+
+      val entity = new AtlasEntity(metadata.AWS_S3_PSEUDO_DIR)
+      entity.setAttribute("qualifiedNamed", pathQualifiedName)
+      entity.setAttribute(metadata.ATTRIBUTE_BUCKET, objectId(bucketEntity))
+      entity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX,
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("name",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+
+      entity
+    }
+    else {
+      val entity = new AtlasEntity(FS_PATH_TYPE_STRING)
+      entity.setAttribute("name",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("path",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("qualifiedName", uri.toString)
+      entity
     }
 
-    val fsPath = new Path(uri)
-    entity.setAttribute("name",
-      Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
-    entity.setAttribute("path", Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
-    entity.setAttribute("qualifiedName", uri.toString)
+
     if (uri.getScheme == "hdfs") {
       entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
     }

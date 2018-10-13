@@ -21,6 +21,7 @@ import java.io.File
 import java.net.{URI, URISyntaxException}
 import java.util.{Collections, Date}
 
+import com.google.common.collect.ImmutableSet
 import com.hortonworks.spark.atlas.{AtlasClient, AtlasClientConf}
 
 import scala.collection.JavaConverters._
@@ -66,13 +67,16 @@ object external extends Logging {
       entity
     } else if (uri.getScheme == metadata.S3_SCHEME || uri.getScheme == metadata.S3A_SCHEME) {
       logWarn("Detected S3")
-      val conf = atlasClient
+
       val strPath = fsPath.toString.toLowerCase
       val bucketName = fsPath.toUri.getAuthority
       val bucketQualifiedName = (fsPath.toUri.getScheme
         + metadata.SCHEME_SEPARATOR
         + fsPath.toUri.getAuthority)
-      val pathQualifiedName = strPath.toLowerCase + clusterName
+      val pathName = strPath.substring(0, strPath.lastIndexOf('/'))
+      val pathQualifiedName = pathName + metadata.QNAME_SEP_CLUSTER_NAME + clusterName
+
+      val objectName = strPath.substring(strPath.lastIndexOf('/') + 1, strPath.length())
 
       // Yes this is a side effect
       val bucketEntity = new AtlasEntity(metadata.AWS_S3_BUCKET)
@@ -80,19 +84,27 @@ object external extends Logging {
       bucketEntity.setAttribute("name", bucketName)
 
       // slight hack :-)
-      val headers = atlasClient.createEntities(Seq(bucketEntity))
-      val guid = headers.getOrElse(bucketEntity.getGuid, bucketEntity.getGuid)
-      bucketEntity.setGuid(guid)
+      // val headers = atlasClient.createEntities(Seq(bucketEntity))
+      // val guid = headers.getOrElse(bucketEntity.getGuid, bucketEntity.getGuid)
+      // bucketEntity.setGuid(guid)
 
-      val entity = new AtlasEntity(metadata.AWS_S3_PSEUDO_DIR)
-      entity.setAttribute(metadata.ATTRIBUTE_BUCKET, objectId(bucketEntity))
-      entity.setAttribute("qualifiedName", pathQualifiedName)
+      val folderEntity = new AtlasEntity(metadata.AWS_S3_PSEUDO_DIR)
+      folderEntity.setAttribute(metadata.ATTRIBUTE_BUCKET, objectId(bucketEntity))
+      folderEntity.setAttribute("qualifiedName", pathQualifiedName)
 
-      entity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX,
-        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
-      entity.setAttribute("name",
-        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      folderEntity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX,
+        pathName)
+      folderEntity.setAttribute("name",
+        pathName)
 
+      val headers = atlasClient.createEntities(Seq(bucketEntity, folderEntity))
+      val guid = headers.getOrElse(folderEntity.getGuid, folderEntity.getGuid)
+      folderEntity.setGuid(guid)
+
+      val entity = new AtlasEntity(metadata.AWS_S3_OBJECT)
+      entity.setAttribute(metadata.ATTRIBUTE_FOLDER, objectId(folderEntity))
+      entity.setAttribute("qualifiedName", strPath)
+      entity.setAttribute("name", objectName)
       entity
     }
     else {

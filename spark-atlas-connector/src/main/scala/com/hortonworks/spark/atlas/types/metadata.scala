@@ -33,6 +33,7 @@ object metadata {
   val ML_PIPELINE_TYPE_STRING = "spark_ml_pipeline"
   val ML_MODEL_TYPE_STRING = "spark_ml_model"
 
+  val QNAME_SEP_CLUSTER_NAME = '@'
   val SCHEME_SEPARATOR = "://"
   val S3_SCHEME = "s3"
   val S3A_SCHEME = "s3a"
@@ -42,6 +43,7 @@ object metadata {
 
   val ATTRIBUTE_BUCKET = "bucket"
   val ATTRIBUTE_OBJECT_PREFIX = "objectPrefix"
+  val ATTRIBUTE_FOLDER = "pseudoDirectory"
 
   import external._
 

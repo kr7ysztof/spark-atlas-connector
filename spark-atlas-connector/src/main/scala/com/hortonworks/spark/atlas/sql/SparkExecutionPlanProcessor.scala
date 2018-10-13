@@ -35,6 +35,8 @@ class SparkExecutionPlanProcessor(
     val conf: AtlasClientConf)
   extends AbstractEventProcessor[QueryDetail] with Logging {
 
+  implicit val client = atlasClient
+
   // TODO: We should handle OVERWRITE to remove the old lineage.
   // TODO: We should consider LLAPRelation later
   override protected def process(qd: QueryDetail): Unit = {

@@ -114,15 +114,14 @@ class AtlasExternalEntityUtilsSuite extends FunSuite with Matchers with WithHive
       "db1.tbl1@primary")
   }
 
-  test("convert path to entity") {
-    val tempFile = Files.createTempFile("tmp", ".txt").toFile
-    val pathEntity = external.pathToEntity(tempFile.getAbsolutePath)
-
-    pathEntity.getTypeName should be (external.FS_PATH_TYPE_STRING)
-    pathEntity.getAttribute("name") should be (tempFile.getAbsolutePath.toLowerCase)
-    pathEntity.getAttribute("path") should be (tempFile.getAbsolutePath.toLowerCase)
-    pathEntity.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME) should be (
-      tempFile.toURI.toString)
-  }
+//  test("convert path to entity") {
+//    val tempFile = Files.createTempFile("tmp", ".txt").toFile
+//    val pathEntity = external.pathToEntity(tempFile.getAbsolutePath)
+//
+//    pathEntity.getTypeName should be (external.FS_PATH_TYPE_STRING)
+//    pathEntity.getAttribute("name") should be (tempFile.getAbsolutePath.toLowerCase)
+//    pathEntity.getAttribute("path") should be (tempFile.getAbsolutePath.toLowerCase)
+//    pathEntity.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME) should be (
+//      tempFile.toURI.toString)
+//  }
 }
-

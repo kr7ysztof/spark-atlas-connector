@@ -17,20 +17,20 @@
 
 package com.hortonworks.spark.atlas.types
 
+import com.hortonworks.spark.atlas.{AtlasClient, AtlasClientConf}
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-
-import org.apache.atlas.AtlasClientV2
 import org.apache.atlas.model.instance.AtlasEntity
-
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.QueryExecution
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.ml.{Pipeline, PipelineModel}
-
 import com.hortonworks.spark.atlas.utils.{Logging, SparkUtils}
 
 object internal extends Logging {
+  val conf = new AtlasClientConf
+  implicit val client = AtlasClient.atlasClient(conf)
 
   val cachedObjects = new mutable.HashMap[String, Object]
 

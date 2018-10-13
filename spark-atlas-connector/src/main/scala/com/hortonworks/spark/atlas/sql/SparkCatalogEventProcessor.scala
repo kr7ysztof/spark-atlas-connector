@@ -34,6 +34,8 @@ class SparkCatalogEventProcessor(
 
   private val cachedObject = new mutable.WeakHashMap[String, Object]
 
+  implicit val client = atlasClient
+
   override protected def process(e: ExternalCatalogEvent): Unit = {
     e match {
       case CreateDatabaseEvent(db) =>

@@ -22,7 +22,6 @@ import org.json4s.jackson.JsonMethods._
 
 import scala.util.Try
 import org.apache.atlas.model.instance.AtlasEntity
-
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation
@@ -32,13 +31,14 @@ import org.apache.spark.sql.execution.command.{CreateDataSourceTableAsSelectComm
 import org.apache.spark.sql.execution.datasources.{InsertIntoHadoopFsRelationCommand, LogicalRelation, SaveIntoDataSourceCommand}
 import org.apache.spark.sql.hive.execution._
 import org.apache.spark.sql.sources.BaseRelation
-
-import com.hortonworks.spark.atlas.AtlasClientConf
+import com.hortonworks.spark.atlas.{AtlasClient, AtlasClientConf}
 import com.hortonworks.spark.atlas.types.{AtlasEntityUtils, external, internal}
 import com.hortonworks.spark.atlas.utils.{Logging, SparkUtils}
 
 object CommandsHarvester extends AtlasEntityUtils with Logging {
   override val conf: AtlasClientConf = new AtlasClientConf
+
+  implicit val client = AtlasClient.atlasClient(conf)
 
   // Spark HBase Connector
   private val HBASE_RELATION_CLASS_NAME =

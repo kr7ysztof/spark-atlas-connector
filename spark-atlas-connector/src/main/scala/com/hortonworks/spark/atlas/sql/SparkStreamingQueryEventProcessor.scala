@@ -29,6 +29,8 @@ class SparkStreamingQueryEventProcessor (
       val conf: AtlasClientConf)
 extends AbstractEventProcessor[QueryProgressEvent] with AtlasEntityUtils with Logging {
 
+  implicit val client = atlasClient
+
   override def process(e: QueryProgressEvent): Unit = {
 
     val inputEntities = e.progress.sources.map{

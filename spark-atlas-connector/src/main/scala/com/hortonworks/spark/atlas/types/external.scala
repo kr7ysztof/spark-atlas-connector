@@ -21,8 +21,9 @@ import java.io.File
 import java.net.{URI, URISyntaxException}
 import java.util.Date
 
-import scala.collection.JavaConverters._
+import com.hortonworks.spark.atlas.AtlasClient
 
+import scala.collection.JavaConverters._
 import org.apache.atlas.AtlasConstants
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook._
 import org.apache.atlas.model.instance.AtlasEntity
@@ -31,7 +32,6 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.types.StructType
-
 import com.hortonworks.spark.atlas.utils.SparkUtils
 
 object external {
@@ -41,7 +41,7 @@ object external {
   val FS_PATH_TYPE_STRING = "fs_path"
   val HDFS_PATH_TYPE_STRING = "hdfs_path"
 
-  def pathToEntity(path: String): AtlasEntity = {
+  def pathToEntity(path: String)(implicit atlasClient: AtlasClient): AtlasEntity = {
     val uri = resolveURI(path)
     val entity = if (uri.getScheme == "hdfs") {
       new AtlasEntity(HDFS_PATH_TYPE_STRING)

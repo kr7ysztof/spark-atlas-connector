@@ -26,6 +26,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef
 import com.hortonworks.spark.atlas.utils.Logging
 
 trait AtlasClient extends Logging {
+  var conf: AtlasClientConf = new AtlasClientConf
 
   def createAtlasTypeDefs(typeDefs: AtlasTypesDef): Unit
 
@@ -81,7 +82,11 @@ trait AtlasClient extends Logging {
 object AtlasClient {
   @volatile private var client: AtlasClient = null
 
+  var conf: AtlasClientConf = null
+
   def atlasClient(conf: AtlasClientConf): AtlasClient = {
+    this.conf = conf
+
     if (client == null) {
       AtlasClient.synchronized {
         if (client == null) {

@@ -19,14 +19,14 @@ package com.hortonworks.spark.atlas.types
 
 import java.io.File
 import java.net.{URI, URISyntaxException}
-import java.util.Date
+import java.util.{Collections, Date}
 
-import com.hortonworks.spark.atlas.AtlasClient
+import com.hortonworks.spark.atlas.{AtlasClient, AtlasClientConf}
 
 import scala.collection.JavaConverters._
 import org.apache.atlas.AtlasConstants
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook._
-import org.apache.atlas.model.instance.AtlasEntity
+import org.apache.atlas.model.instance.{AtlasEntity, AtlasObjectId}
 import org.apache.commons.lang.RandomStringUtils
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.session.SessionState
@@ -37,6 +37,12 @@ import com.hortonworks.spark.atlas.utils.SparkUtils
 object external {
   // External metadata types used to link with external entities
 
+  def objectId(entity: AtlasEntity): AtlasObjectId = {
+    val qualifiedName = entity.getAttribute("qualifiedName")
+    new AtlasObjectId(entity.getGuid, entity.getTypeName,
+      Collections.singletonMap("qualifiedName", qualifiedName))
+  }
+
   // ================ File system entities ======================
   val FS_PATH_TYPE_STRING = "fs_path"
   val HDFS_PATH_TYPE_STRING = "hdfs_path"
@@ -44,6 +50,7 @@ object external {
   def pathToEntity(path: String)(implicit atlasClient: AtlasClient): AtlasEntity = {
     val uri = resolveURI(path)
     val fsPath = new Path(uri)
+    def clusterName: String = atlasClient.conf.get(AtlasClientConf.CLUSTER_NAME)
 
     val entity = if (uri.getScheme == "hdfs") {
       val entity = new AtlasEntity(HDFS_PATH_TYPE_STRING)
@@ -55,6 +62,7 @@ object external {
       entity.setAttribute("qualifiedName", uri.toString)
       entity
     } else if (uri.getScheme == metadata.S3_SCHEME || uri.getScheme == metadata.S3A_SCHEME) {
+      val conf = atlasClient
       val strPath = fsPath.toString.toLowerCase
       val bucketName = fsPath.toUri.getAuthority
       val bucketQualifiedName = (fsPath.toUri.getScheme

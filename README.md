@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hortonworks-spark/spark-atlas-connector.svg?branch=atlas-1.1)](https://travis-ci.org/hortonworks-spark/spark-atlas-connector)
+[![Build Status](https://travis-ci.org/hortonworks-spark/spark-atlas-connector.svg?branch=branch-2.4)](https://travis-ci.org/hortonworks-spark/spark-atlas-connector)
 
 Spark Atlas Connector
 ===

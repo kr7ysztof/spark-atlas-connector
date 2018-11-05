@@ -31,7 +31,7 @@ extends AbstractEventProcessor[QueryProgressEvent] with AtlasEntityUtils with Lo
 
   override def process(e: QueryProgressEvent): Unit = {
 
-    val inputEntities = e.progress.sources.map{
+    val inputEntities = e.progress.sources.flatMap{
       case s if (s.description.contains("FileStreamSource")) =>
         val begin = s.description.indexOf('[')
         val end = s.description.indexOf(']')
@@ -40,7 +40,7 @@ extends AbstractEventProcessor[QueryProgressEvent] with AtlasEntityUtils with Lo
         external.pathToEntity(path)
     }
 
-    var outputEntity: AtlasEntity = null
+    var outputEntity: Seq[AtlasEntity] = null
     if (e.progress.sink.description.contains("FileSink")) {
       val begin = e.progress.sink.description.indexOf('[')
       val end = e.progress.sink.description.indexOf(']')
@@ -64,12 +64,12 @@ extends AbstractEventProcessor[QueryProgressEvent] with AtlasEntityUtils with Lo
     val entities = {
       // ml related cached object
       if (internal.cachedObjects.contains("model_uid")) {
-        internal.updateMLProcessToEntity(inputEntities, Seq(outputEntity), logMap)
+        internal.updateMLProcessToEntity(inputEntities, outputEntity, logMap)
       } else {
         val pEntity = internal.etlProcessToEntity(
-          inputEntities.toList, List(outputEntity), logMap)
+          inputEntities.toList, outputEntity.toList, logMap)
 
-        Seq(pEntity) ++ inputEntities ++ Seq(outputEntity)
+        Seq(pEntity) ++ inputEntities ++ outputEntity
       }
     }
     atlasClient.createEntities(entities)

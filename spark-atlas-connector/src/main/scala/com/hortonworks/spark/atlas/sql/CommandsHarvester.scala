@@ -98,7 +98,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
         case l: LogicalRelation =>
           isFiles = true
           l.relation match {
-            case r: FileRelation => r.inputFiles.map(external.pathToEntity).toSeq
+            case r: FileRelation => r.inputFiles.flatMap(external.pathToEntity).toSeq
             case _ => Seq.empty
           }
         case local: LocalRelation =>
@@ -114,7 +114,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
 
       // new table/file entity
       val outputEntities = node.catalogTable.map(tableToEntities(_)).getOrElse(
-        List(external.pathToEntity(node.outputPath.toUri.toString)))
+        external.pathToEntity(node.outputPath.toUri.toString))
       val logMap = getPlanInfo(qd)
 
       // ml related cached object
@@ -139,7 +139,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
         case v: View => tableToEntities(v.desc)
         case l: LogicalRelation => l.relation match {
           case r: FileRelation => l.catalogTable.map(tableToEntities(_)).getOrElse(
-            l.relation.asInstanceOf[FileRelation].inputFiles.map(external.pathToEntity).toSeq)
+            l.relation.asInstanceOf[FileRelation].inputFiles.flatMap(external.pathToEntity).toSeq)
 
           // support SHC
           case r if r.getClass.getCanonicalName.endsWith(HBASE_RELATION_CLASS_NAME) =>
@@ -182,7 +182,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
         case v: View => tableToEntities(v.desc)
         case l: LogicalRelation if l.relation.isInstanceOf[FileRelation] =>
           l.catalogTable.map(tableToEntities(_)).getOrElse {
-            l.relation.asInstanceOf[FileRelation].inputFiles.map(external.pathToEntity).toSeq
+            l.relation.asInstanceOf[FileRelation].inputFiles.flatMap(external.pathToEntity).toSeq
           }
         case e =>
           logWarn(s"Missing unknown leaf node: $e")
@@ -214,13 +214,13 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
 
       // ml related cached object
       if (internal.cachedObjects.contains("model_uid")) {
-        internal.updateMLProcessToEntity(List(pathEntity), outputEntities, logMap)
+        internal.updateMLProcessToEntity(pathEntity, outputEntities, logMap)
       } else {
 
         // create process entity
         val pEntity = internal.etlProcessToEntity(
-          List(pathEntity), List(outputEntities.head), logMap)
-        Seq(pEntity, pathEntity) ++ outputEntities
+          pathEntity.toList, List(outputEntities.head), logMap)
+        Seq(pEntity) ++ pathEntity ++ outputEntities
       }
     }
   }
@@ -243,7 +243,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
 
         case f: FileSourceScanExec =>
           f.tableIdentifier.map(prepareEntities).getOrElse(
-            f.relation.location.inputFiles.map(external.pathToEntity).toSeq)
+            f.relation.location.inputFiles.flatMap(external.pathToEntity).toSeq)
         case e =>
           logWarn(s"Missing unknown leaf node: $e")
           Seq.empty
@@ -254,13 +254,13 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
 
       // ml related cached object
       if (internal.cachedObjects.contains("model_uid")) {
-        internal.updateMLProcessToEntity(inputs, List(destEntity), logMap)
+        internal.updateMLProcessToEntity(inputs, destEntity, logMap)
       } else {
 
         // create process entity
         val pEntity = internal.etlProcessToEntity(
-          inputs, List(destEntity), logMap)
-        Seq(pEntity, destEntity) ++ inputsEntities.flatten
+          inputs, destEntity.toList, logMap)
+        Seq(pEntity) ++destEntity ++ inputsEntities.flatten
       }
     }
   }
@@ -303,7 +303,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
         case v: View => tableToEntities(v.desc)
         case l: LogicalRelation => l.relation match {
           case r: FileRelation => l.catalogTable.map(tableToEntities(_)).getOrElse(
-            l.relation.asInstanceOf[FileRelation].inputFiles.map(external.pathToEntity).toSeq)
+            l.relation.asInstanceOf[FileRelation].inputFiles.flatMap(external.pathToEntity).toSeq)
           case e => Seq.empty
         }
         case a: AnalysisBarrier => a.child match {

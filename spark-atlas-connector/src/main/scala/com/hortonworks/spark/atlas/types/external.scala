@@ -40,11 +40,14 @@ object external {
   // ================ File system entities ======================
   val FS_PATH_TYPE_STRING = "fs_path"
   val HDFS_PATH_TYPE_STRING = "hdfs_path"
+  val S3_PATH_TYPE_STRING = "aws_s3_pseudo_dir"
 
-  def pathToEntity(path: String): AtlasEntity = {
+  def pathToEntity(path: String): Seq[AtlasEntity] = {
     val uri = resolveURI(path)
     val entity = if (uri.getScheme == "hdfs") {
       new AtlasEntity(HDFS_PATH_TYPE_STRING)
+    } else if (uri.getScheme.startsWith("s3")) {
+      new AtlasEntity(S3_PATH_TYPE_STRING)
     } else {
       new AtlasEntity(FS_PATH_TYPE_STRING)
     }
@@ -57,8 +60,18 @@ object external {
     if (uri.getScheme == "hdfs") {
       entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
     }
-
-    entity
+    val result = Seq(entity)
+    if (uri.getScheme.startsWith("s3")) {
+      entity.setAttribute("objectPrefix",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      val bucket = new AtlasEntity("aws_s3_bucket")
+      bucket.setAttribute("name",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      bucket.setAttribute("qualifiedName",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      result ++ Seq(bucket)
+    }
+    result
   }
 
   def resolveURI(path: String): URI = {

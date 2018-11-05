@@ -47,7 +47,7 @@ object internal extends Logging {
     dbEntity.setAttribute("locationUri", pathEntity)
     dbEntity.setAttribute("properties", dbDefinition.properties.asJava)
     dbEntity.setAttribute("owner", owner)
-    Seq(dbEntity, pathEntity)
+    Seq(dbEntity) ++ pathEntity
   }
 
   def sparkStorageFormatUniqueAttribute(db: String, table: String): String = {
@@ -59,7 +59,7 @@ object internal extends Logging {
       db: String,
       table: String): Seq[AtlasEntity] = {
     val sdEntity = new AtlasEntity(metadata.STORAGEDESC_TYPE_STRING)
-    val pathEntity = storageFormat.locationUri.map { u => external.pathToEntity(u.toString) }
+    val pathEntity = storageFormat.locationUri.map { u => external.pathToEntity(u.toString).head }
 
     sdEntity.setAttribute("qualifiedName",
       sparkStorageFormatUniqueAttribute(db, table))

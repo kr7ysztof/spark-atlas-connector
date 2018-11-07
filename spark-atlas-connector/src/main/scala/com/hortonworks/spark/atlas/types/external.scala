@@ -70,17 +70,15 @@ object external extends Logging {
 
       val strPath = fsPath.toString.toLowerCase
       val bucketName = fsPath.toUri.getAuthority
-      val bucketQualifiedName = (fsPath.toUri.getScheme
-        + metadata.SCHEME_SEPARATOR
-        + fsPath.toUri.getAuthority)
       val pathName = strPath.substring(0, strPath.lastIndexOf('/'))
-      val pathQualifiedName = pathName + metadata.QNAME_SEP_CLUSTER_NAME + clusterName
-
+      val folderName = pathName.replace(uri.getScheme + "://", "")
       val objectName = strPath.substring(strPath.lastIndexOf('/') + 1, strPath.length())
+      val qualifiedObjectName = folderName + "/" + objectName
+      val folderNameWithSlash = if (folderName.contains('/')) folderName else s"$folderName/"
 
       // Yes this is a side effect
       val bucketEntity = new AtlasEntity(metadata.AWS_S3_BUCKET)
-      bucketEntity.setAttribute("qualifiedName", bucketQualifiedName)
+      bucketEntity.setAttribute("qualifiedName", bucketName)
       bucketEntity.setAttribute("name", bucketName)
 
       // slight hack :-)
@@ -90,12 +88,10 @@ object external extends Logging {
 
       val folderEntity = new AtlasEntity(metadata.AWS_S3_PSEUDO_DIR)
       folderEntity.setAttribute(metadata.ATTRIBUTE_BUCKET, objectId(bucketEntity))
-      folderEntity.setAttribute("qualifiedName", pathQualifiedName)
+      folderEntity.setAttribute("qualifiedName", folderNameWithSlash)
 
-      folderEntity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX,
-        pathName)
-      folderEntity.setAttribute("name",
-        pathName)
+      folderEntity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX, folderName)
+      folderEntity.setAttribute("name", folderNameWithSlash)
 
       val headers = atlasClient.createEntities(Seq(bucketEntity, folderEntity))
       val guid = headers.getOrElse(folderEntity.getGuid, folderEntity.getGuid)
@@ -103,8 +99,8 @@ object external extends Logging {
 
       val entity = new AtlasEntity(metadata.AWS_S3_OBJECT)
       entity.setAttribute(metadata.ATTRIBUTE_FOLDER, objectId(folderEntity))
-      entity.setAttribute("qualifiedName", strPath)
-      entity.setAttribute("name", objectName)
+      entity.setAttribute("qualifiedName", qualifiedObjectName)
+      entity.setAttribute("name", qualifiedObjectName)
       entity
     }
     else {

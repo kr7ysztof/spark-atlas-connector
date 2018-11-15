@@ -35,8 +35,10 @@ class CreateEntitiesTrackingAtlasClient extends AtlasClient {
 
   override def updateAtlasTypeDefs(typeDefs: AtlasTypesDef): Unit = {}
 
-  override protected def doCreateEntities(entities: Seq[AtlasEntity]): Unit = {
+  override protected def doCreateEntities(entities: Seq[AtlasEntity])
+  : mutable.Map[String, String] = {
     createdEntities ++= entities
+    mutable.Map[String, String] ()
   }
 
   override protected def doDeleteEntityWithUniqueAttr(entityType: String,

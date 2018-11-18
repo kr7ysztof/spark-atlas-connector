@@ -41,7 +41,7 @@ object external {
   val FS_PATH_TYPE_STRING = "fs_path"
   val HDFS_PATH_TYPE_STRING = "hdfs_path"
 
-  def pathToEntity(path: String): AtlasEntity = {
+  def pathToEntity(path: String): Seq[AtlasEntity] = {
     val uri = resolveURI(path)
     val entity = if (uri.getScheme == "hdfs") {
       new AtlasEntity(HDFS_PATH_TYPE_STRING)
@@ -58,7 +58,7 @@ object external {
       entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
     }
 
-    entity
+    Seq(entity)
   }
 
   def resolveURI(path: String): URI = {

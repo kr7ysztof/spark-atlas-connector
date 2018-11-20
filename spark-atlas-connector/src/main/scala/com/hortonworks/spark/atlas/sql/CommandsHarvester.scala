@@ -208,7 +208,7 @@ object CommandsHarvester extends AtlasEntityUtils with Logging {
 
   object LoadDataHarvester extends Harvester[LoadDataCommand] {
     override def harvest(node: LoadDataCommand, qd: QueryDetail): Seq[AtlasEntity] = {
-      val pathEntity = external.pathToEntity(node.path).head
+      val pathEntity = external.pathToEntity(node.path).last
       val outputEntities = prepareEntities(node.table)
       val logMap = getPlanInfo(qd)
 

@@ -116,13 +116,49 @@ class AtlasExternalEntityUtilsSuite extends FunSuite with Matchers with WithHive
 
   test("convert path to entity") {
     val tempFile = Files.createTempFile("tmp", ".txt").toFile
-    val pathEntity = external.pathToEntity(tempFile.getAbsolutePath).head
+    val pathEntity = external.pathToEntity(tempFile.getAbsolutePath).last
 
     pathEntity.getTypeName should be (external.FS_PATH_TYPE_STRING)
     pathEntity.getAttribute("name") should be (tempFile.getAbsolutePath.toLowerCase)
     pathEntity.getAttribute("path") should be (tempFile.getAbsolutePath.toLowerCase)
     pathEntity.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME) should be (
       tempFile.toURI.toString)
+  }
+
+  test("convert path s3 to entity") {
+    val pathEntity = external.pathToEntity("s3a://bucket/dir/file")
+
+    val file = pathEntity.last
+    val dir = pathEntity(1)
+    val bucket = pathEntity.head
+    file.getTypeName should be (metadata.AWS_S3_OBJECT)
+    file.getAttribute("name") should be ("bucket/dir/file")
+    file.getAttribute("qualifiedName") should be ("bucket/dir/file")
+
+    dir.getTypeName should be (metadata.AWS_S3_PSEUDO_DIR)
+    dir.getAttribute("name") should be ("bucket/dir")
+    dir.getAttribute("qualifiedName") should be ("bucket/dir")
+
+    bucket.getTypeName should be (metadata.AWS_S3_BUCKET)
+    bucket.getAttribute("name") should be ("bucket")
+    bucket.getAttribute("qualifiedName") should be ("bucket")
+
+    val pathEntity2 = external.pathToEntity("s3a://bucket/file")
+
+    val file2 = pathEntity2.last
+    val dir2 = pathEntity2(1)
+    val bucket2 = pathEntity2.head
+    file2.getTypeName should be (metadata.AWS_S3_OBJECT)
+    file2.getAttribute("name") should be ("bucket/file")
+    file2.getAttribute("qualifiedName") should be ("bucket/file")
+
+    dir2.getTypeName should be (metadata.AWS_S3_PSEUDO_DIR)
+    dir2.getAttribute("name") should be ("bucket/")
+    dir2.getAttribute("qualifiedName") should be ("bucket/")
+
+    bucket2.getTypeName should be (metadata.AWS_S3_BUCKET)
+    bucket2.getAttribute("name") should be ("bucket")
+    bucket2.getAttribute("qualifiedName") should be ("bucket")
   }
 }
 

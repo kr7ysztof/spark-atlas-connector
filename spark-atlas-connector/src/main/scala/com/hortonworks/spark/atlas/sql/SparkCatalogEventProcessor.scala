@@ -51,7 +51,7 @@ class SparkCatalogEventProcessor(
         cachedObject.remove(dbUniqueAttribute(db)).foreach { o =>
           val dbDef = o.asInstanceOf[CatalogDatabase]
           val path = dbDef.locationUri.toString
-          val pathEntity = external.pathToEntity(path).head
+          val pathEntity = external.pathToEntity(path).last
           atlasClient.deleteEntityWithUniqueAttr(pathEntity.getTypeName, path)
         }
 

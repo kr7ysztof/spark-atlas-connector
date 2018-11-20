@@ -43,22 +43,57 @@ object external {
 
   def pathToEntity(path: String): Seq[AtlasEntity] = {
     val uri = resolveURI(path)
-    val entity = if (uri.getScheme == "hdfs") {
-      new AtlasEntity(HDFS_PATH_TYPE_STRING)
-    } else {
-      new AtlasEntity(FS_PATH_TYPE_STRING)
-    }
-
     val fsPath = new Path(uri)
-    entity.setAttribute("name",
-      Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
-    entity.setAttribute("path", Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
-    entity.setAttribute("qualifiedName", uri.toString)
-    if (uri.getScheme == "hdfs") {
-      entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
-    }
+    val entity = if (uri.getScheme == "hdfs") {
+      val entity = new AtlasEntity(HDFS_PATH_TYPE_STRING)
+      entity.setAttribute("name",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("path",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("qualifiedName", uri.toString)
+      if (uri.getScheme == "hdfs") {
+        entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
+      }
+      Seq(entity)
+    } else if (uri.getScheme.startsWith(metadata.S3_SCHEME)) {
+      val strPath = fsPath.toString.toLowerCase
+      val bucketName = fsPath.toUri.getAuthority
+      val pathName = strPath.substring(0, strPath.lastIndexOf('/'))
+      val folderName = pathName.replace(uri.getScheme + "://", "")
+      val objectName = strPath.substring(strPath.lastIndexOf('/') + 1, strPath.length())
+      val qualifiedObjectName = folderName + "/" + objectName
+      val folderNameWithSlash = if (folderName.contains('/')) folderName else s"$folderName/"
 
-    Seq(entity)
+      val bucketEntity = new AtlasEntity(metadata.AWS_S3_BUCKET)
+      bucketEntity.setAttribute("qualifiedName", bucketName)
+      bucketEntity.setAttribute("name", bucketName)
+
+      val folderEntity = new AtlasEntity(metadata.AWS_S3_PSEUDO_DIR)
+      folderEntity.setAttribute(metadata.ATTRIBUTE_BUCKET, bucketEntity)
+      folderEntity.setAttribute("qualifiedName", folderNameWithSlash)
+
+      folderEntity.setAttribute(metadata.ATTRIBUTE_OBJECT_PREFIX, folderName)
+      folderEntity.setAttribute("name", folderNameWithSlash)
+
+      val entity = new AtlasEntity(metadata.AWS_S3_OBJECT)
+      entity.setAttribute(metadata.ATTRIBUTE_FOLDER, folderEntity)
+      entity.setAttribute("qualifiedName", qualifiedObjectName)
+      entity.setAttribute("name", qualifiedObjectName)
+      List(bucketEntity, folderEntity, entity)
+
+    } else {
+      val entity = new AtlasEntity(FS_PATH_TYPE_STRING)
+      entity.setAttribute("name",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("path",
+        Path.getPathWithoutSchemeAndAuthority(fsPath).toString.toLowerCase)
+      entity.setAttribute("qualifiedName", uri.toString)
+      if (uri.getScheme == "hdfs") {
+        entity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, uri.getAuthority)
+      }
+      Seq(entity)
+    }
+    entity
   }
 
   def resolveURI(path: String): URI = {

@@ -65,7 +65,7 @@ class MLPipelineEventProcessor(
         pathF.setAccessible(true)
         val path = pathF.get(e).asInstanceOf[String]
 
-        val pipelineDirEntity = external.pathToEntity(path).head
+        val pipelineDirEntity = external.pathToEntity(path).last
         val pipeline_uid = internal.cachedObjects(uid).toString
 
         val pipelineEntity = internal.mlPipelineToEntity(pipeline_uid, pipelineDirEntity)
@@ -89,7 +89,7 @@ class MLPipelineEventProcessor(
         if (! internal.cachedObjects.contains(s"${uid}_pipelineDirEntity")) {
           logInfo(s"Model Entity is already created")
         } else {
-          val modelDirEntity = external.pathToEntity(path).head
+          val modelDirEntity = external.pathToEntity(path).last
 
           val pipelineDirEntity = internal.cachedObjects(s"${uid}_pipelineDirEntity")
             .asInstanceOf[AtlasEntity]
@@ -148,7 +148,7 @@ class MLPipelineEventProcessor(
         directoryF.setAccessible(true)
         val directory = directoryF.get(e).asInstanceOf[String]
 
-        val modelDirEntity = external.pathToEntity(directory).head
+        val modelDirEntity = external.pathToEntity(directory).last
         val modelEntity = internal.mlModelToEntity(uid, modelDirEntity)
 
         internal.cachedObjects.put(s"${uid}_modelDirEntity", modelDirEntity)

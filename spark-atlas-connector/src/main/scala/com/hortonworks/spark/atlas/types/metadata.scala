@@ -33,6 +33,14 @@ object metadata {
   val ML_PIPELINE_TYPE_STRING = "spark_ml_pipeline"
   val ML_MODEL_TYPE_STRING = "spark_ml_model"
 
+  val S3_SCHEME = "s3"
+  val AWS_S3_BUCKET = "aws_s3_bucket"
+  val AWS_S3_PSEUDO_DIR = "aws_s3_pseudo_dir"
+  val AWS_S3_OBJECT = "aws_s3_object"
+  val ATTRIBUTE_BUCKET = "bucket"
+  val ATTRIBUTE_OBJECT_PREFIX = "objectPrefix"
+  val ATTRIBUTE_FOLDER = "pseudoDirectory"
+
   import external._
 
   // ========= DB type =========
